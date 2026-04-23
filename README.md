@@ -1,6 +1,6 @@
 # Syntic
 
-Syntic is a pure Haskell drawing engine with a strict hexagonal architecture. The immediate goal is to make the core model and use cases clean enough that future GUI, file format, rendering, and collaboration adapters can be added without leaking concerns across layers.
+Syntic is a pure Haskell watercolor engine. The immediate goal is to make the core model and use cases clean enough that future GUI, file format, rendering, and collaboration adapters can be added without leaking concerns across layers.
 
 ## Architecture
 
