@@ -1,0 +1,56 @@
+cabal-version:      3.0
+name:               syntic
+version:            0.1.0.0
+synopsis:           Pure Haskell drawing software
+description:        Early foundation for Syntic, a drawing application built with a strict hexagonal architecture.
+category:           Graphics
+build-type:         Simple
+extra-doc-files:    README.md
+
+common warnings
+  default-language: GHC2021
+  ghc-options:
+    -Wall
+    -Wcompat
+    -Widentities
+    -Wincomplete-record-updates
+    -Wincomplete-uni-patterns
+    -Wmissing-export-lists
+    -Wmissing-import-lists
+    -Wpartial-fields
+    -Wredundant-constraints
+
+library
+  import: warnings
+  hs-source-dirs: src
+  exposed-modules:
+      Syntic.Adapter.InMemory.DocumentStore
+      Syntic.Application.Editor
+      Syntic.Application.Port.DocumentStore
+      Syntic.Domain.Color
+      Syntic.Domain.Document
+      Syntic.Domain.Geometry
+      Syntic.Domain.Identifier
+      Syntic.Domain.Shape
+  build-depends:
+      base >=4.15 && <5,
+      containers >=0.6 && <0.8
+
+executable syntic
+  import: warnings
+  hs-source-dirs: app
+  main-is: Main.hs
+  build-depends:
+      base >=4.15 && <5,
+      syntic
+
+test-suite syntic-test
+  import: warnings
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
+  build-depends:
+      base >=4.15 && <5,
+      HUnit >=1.6 && <1.7,
+      syntic
+
