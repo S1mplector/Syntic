@@ -19,11 +19,11 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Syntic.Domain.Color (Color)
 import Syntic.Domain.Geometry (CanvasSize, Vector)
-import Syntic.Domain.Identifier (DocumentId, LayerId (..), ShapeId)
+import Syntic.Domain.Identifier (DocumentId, LayerId (LayerId), ShapeId)
 import Syntic.Domain.Layer
   ( BlendMode
   , Layer
-  , LayerError (..)
+  , LayerError (LayerShapeAlreadyExists, LayerShapeNotFound)
   , addShapeToLayer
   , emptyLayer
   , lookupShapeInLayer
@@ -35,7 +35,7 @@ import Syntic.Domain.Layer
   , setLayerVisibility
   , updateShapeInLayer
   )
-import Syntic.Domain.Shape (Shape (..), Style, moveShape)
+import Syntic.Domain.Shape (Shape (shapeStyle), Style, moveShape)
 
 data Document = Document
   { internalDocumentId      :: !DocumentId

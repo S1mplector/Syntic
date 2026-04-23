@@ -1,4 +1,4 @@
-cabal-version:      3.0
+cabal-version:      3.6
 name:               syntic
 version:            0.1.0.0
 synopsis:           Pure Haskell drawing software
@@ -9,6 +9,7 @@ extra-doc-files:    README.md
 
 common warnings
   default-language: GHC2021
+  default-extensions: DerivingStrategies
   ghc-options:
     -Wall
     -Wcompat

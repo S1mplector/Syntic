@@ -7,21 +7,21 @@ module Syntic.Application.Editor
 
 import Data.Bifunctor (first)
 import Syntic.Application.History
-  ( History
-  , currentDocument
+  ( currentDocument
   , newHistory
   , recordChange
   , redo
   , undo
   )
-import Syntic.Application.Port.DocumentStore (DocumentStore (..))
+import Syntic.Application.Port.DocumentStore
+  ( DocumentStore (lookupDocument, lookupHistory, saveDocument, saveHistory)
+  )
 import Syntic.Domain.Color (Color)
 import Syntic.Domain.Document
   ( Document
   , DocumentCommand
   , DomainError
   , applyCommand
-  , documentId
   , emptyDocument
   )
 import Syntic.Domain.Geometry (CanvasSize)

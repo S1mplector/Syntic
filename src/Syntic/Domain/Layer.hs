@@ -23,7 +23,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
 import Syntic.Domain.Identifier (LayerId, ShapeId)
-import Syntic.Domain.Shape (Shape (..))
+import Syntic.Domain.Shape (Shape (shapeId))
 
 data BlendMode
   = Normal

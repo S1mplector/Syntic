@@ -1,19 +1,19 @@
 module Main (main) where
 
 import Data.Bifunctor (first)
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Syntic.Adapter.InMemory.DocumentStore
   ( documentStorePort
   , emptyStore
   )
 import Syntic.Application.Editor
   ( ApplicationError
-  , CreateDocumentRequest (..)
-  , EditorService (..)
+  , CreateDocumentRequest (CreateDocumentRequest, createBackgroundColor, createCanvasSize, createDocumentId)
+  , EditorService (applyDocumentCommand, createDocument, redoDocument, undoDocument)
   , mkEditorService
   )
 import Syntic.Domain.Brush (defaultWatercolorBrush, washBrush)
-import Syntic.Domain.BrushStroke (BrushStroke (..), StrokeSample (..))
+import Syntic.Domain.BrushStroke (BrushStroke (BrushStroke, strokeBrush, strokeColor, strokeSamples), StrokeSample (StrokeSample))
 import Syntic.Domain.Color (opaque)
 import Syntic.Domain.Document
   ( Document
@@ -23,18 +23,18 @@ import Syntic.Domain.Document
   )
 import Syntic.Domain.Geometry
   ( CanvasSizeError
-  , Point (..)
+  , Point (Point)
   , mkCanvasSize
   )
 import Syntic.Domain.Identifier
-  ( DocumentId (..)
-  , LayerId (..)
-  , ShapeId (..)
+  ( DocumentId (DocumentId)
+  , LayerId (LayerId)
+  , ShapeId (ShapeId)
   )
 import Syntic.Domain.Shape
-  ( Shape (..)
+  ( Shape (Shape, shapeGeometry, shapeId, shapeStyle)
   , ShapeGeometry (BrushStrokeGeometry)
-  , Style (..)
+  , Style (Style, fillColor, stroke)
   )
 
 main :: IO ()

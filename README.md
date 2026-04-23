@@ -17,16 +17,17 @@ Layer responsibilities:
 - `Syntic.Adapter.*` owns concrete interpreters for ports. The first adapter is an in-memory document store so the whole flow stays testable and pure.
 - `app/Main.hs` is the composition root. It wires ports to adapters and runs a tiny scenario.
 
-## Initial Scope
+## Current Scope
 
-The first slice models a drawable document with:
+The engine models a layered, watercolor-aware document with:
 
-- a validated canvas size
-- a background color
-- a stacking-ordered shape collection
-- pure commands for adding, moving, restyling, and removing shapes
-
-This is intentionally small. It gives us a stable core before we add concerns like selection, layers, tools, undo/redo, rasterization, serialization, or a GUI.
+- a validated canvas size and background color
+- **layers** with blend mode, opacity, and visibility — essential for watercolor techniques like wet-on-dry glazing and separate washes
+- **watercolor brush model** (`Syntic.Domain.Brush`) with tip type, size, opacity, flow, wetness, pigment density, granulation, and edge softness
+- **pressure-aware brush strokes** (`Syntic.Domain.BrushStroke`) composed of sample points carrying position and tablet pressure
+- geometric shapes (rectangles, ellipses, polylines) alongside brush strokes in the same layer
+- pure commands for adding/removing layers, adding/moving/restyling/removing shapes within a targeted layer
+- **undo/redo history** (`Syntic.Application.History`) as a separate application concern with snapshot-based state tracking
 
 ## Ground Rules
 
@@ -40,9 +41,9 @@ This is intentionally small. It gives us a stable core before we add concerns li
 
 Reasonable next increments:
 
-1. Add document history and undo/redo as a separate application concern.
-2. Introduce tool semantics such as rectangle tool, ellipse tool, and freehand stroke tool.
+1. Introduce tool semantics — rectangle tool, ellipse tool, brush tool — that map input events to document commands.
+2. Add a watercolor simulation module: pigment diffusion, wet-on-wet bleeding, granulation texture, and drying.
 3. Add export/import ports for a native file format.
-4. Add a rendering port and a pure scene graph projection.
-5. Add a frontend adapter once the core behavior is stable.
+4. Add a rendering port and a pure scene graph projection that respects layer blend modes and brush parameters.
+5. Add a frontend adapter (GUI or terminal preview) once the core behavior is stable.
 

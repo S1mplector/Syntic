@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Test.HUnit
   ( Counts
   , Test (TestCase, TestLabel, TestList)
@@ -14,15 +14,15 @@ import Syntic.Adapter.InMemory.DocumentStore
   )
 import Syntic.Application.Editor
   ( ApplicationError (NothingToUndo)
-  , CreateDocumentRequest (..)
-  , EditorService (..)
+  , CreateDocumentRequest (CreateDocumentRequest, createBackgroundColor, createCanvasSize, createDocumentId)
+  , EditorService (applyDocumentCommand, createDocument, getDocument, redoDocument, undoDocument)
   , mkEditorService
   )
 import Syntic.Domain.Brush (defaultWatercolorBrush)
-import Syntic.Domain.BrushStroke (BrushStroke (..), StrokeSample (..))
+import Syntic.Domain.BrushStroke (BrushStroke (BrushStroke, strokeBrush, strokeColor, strokeSamples), StrokeSample (StrokeSample))
 import Syntic.Domain.Color (opaque)
 import Syntic.Domain.Document
-  ( DocumentCommand (AddLayer, AddShape, MoveShape, RemoveLayer)
+  ( DocumentCommand (AddLayer, AddShape, MoveShape)
   , DomainError (LayerAlreadyExists, ShapeAlreadyExists)
   , applyCommand
   , defaultLayerId
@@ -30,20 +30,20 @@ import Syntic.Domain.Document
   , orderedShapes
   )
 import Syntic.Domain.Geometry
-  ( Point (..)
-  , Rectangle (..)
-  , Vector (..)
+  ( Point (Point)
+  , Rectangle (Rectangle, rectangleHeight, rectangleOrigin, rectangleWidth)
+  , Vector (Vector)
   , mkCanvasSize
   )
 import Syntic.Domain.Identifier
-  ( DocumentId (..)
-  , LayerId (..)
-  , ShapeId (..)
+  ( DocumentId (DocumentId)
+  , LayerId (LayerId)
+  , ShapeId (ShapeId)
   )
 import Syntic.Domain.Shape
-  ( Shape (..)
+  ( Shape (Shape, shapeGeometry, shapeId, shapeStyle)
   , ShapeGeometry (BrushStrokeGeometry, RectangleGeometry)
-  , Style (..)
+  , Style (Style, fillColor, stroke)
   )
 
 main :: IO Counts

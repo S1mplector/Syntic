@@ -7,7 +7,9 @@ module Syntic.Adapter.InMemory.DocumentStore
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Syntic.Application.History (History)
-import Syntic.Application.Port.DocumentStore (DocumentStore (..))
+import Syntic.Application.Port.DocumentStore
+  ( DocumentStore (DocumentStore, lookupDocument, lookupHistory, saveDocument, saveHistory)
+  )
 import Syntic.Domain.Document (Document, documentId)
 import Syntic.Domain.Identifier (DocumentId)
 
