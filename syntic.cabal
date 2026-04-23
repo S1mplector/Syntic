@@ -49,6 +49,31 @@ executable syntic
       base >=4.15 && <5,
       syntic
 
+executable syntic-gui
+  import: warnings
+  hs-source-dirs: app-gui
+  main-is: Main.hs
+  default-extensions:
+      OverloadedLabels,
+      OverloadedStrings
+  other-modules:
+      Syntic.Adapter.Gtk.App
+      Syntic.Adapter.Gtk.Render
+      Syntic.Adapter.Gtk.State
+  build-depends:
+      base >=4.15 && <5,
+      containers >=0.6 && <0.8,
+      gi-cairo >=1.0 && <1.1,
+      gi-cairo-connector >=0.1 && <0.2,
+      gi-cairo-render >=0.1 && <0.2,
+      gi-gdk >=3.0 && <3.1,
+      gi-glib >=2.0 && <2.1,
+      gi-gobject >=2.0 && <2.1,
+      gi-gtk >=3.0 && <3.1,
+      haskell-gi-base >=0.26 && <0.27,
+      syntic,
+      text >=1.2 && <3
+
 test-suite syntic-test
   import: warnings
   type: exitcode-stdio-1.0
