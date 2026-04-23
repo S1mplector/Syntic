@@ -26,11 +26,15 @@ library
   exposed-modules:
       Syntic.Adapter.InMemory.DocumentStore
       Syntic.Application.Editor
+      Syntic.Application.History
       Syntic.Application.Port.DocumentStore
+      Syntic.Domain.Brush
+      Syntic.Domain.BrushStroke
       Syntic.Domain.Color
       Syntic.Domain.Document
       Syntic.Domain.Geometry
       Syntic.Domain.Identifier
+      Syntic.Domain.Layer
       Syntic.Domain.Shape
   build-depends:
       base >=4.15 && <5,

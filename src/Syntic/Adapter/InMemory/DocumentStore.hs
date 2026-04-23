@@ -6,30 +6,42 @@ module Syntic.Adapter.InMemory.DocumentStore
 
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Syntic.Application.History (History)
 import Syntic.Application.Port.DocumentStore (DocumentStore (..))
 import Syntic.Domain.Document (Document, documentId)
 import Syntic.Domain.Identifier (DocumentId)
 
-newtype InMemoryDocumentStore = InMemoryDocumentStore
-  { internalDocuments :: Map DocumentId Document
+data InMemoryDocumentStore = InMemoryDocumentStore
+  { internalDocuments  :: !(Map DocumentId Document)
+  , internalHistories  :: !(Map DocumentId History)
   }
   deriving stock (Eq, Show)
 
 emptyStore :: InMemoryDocumentStore
-emptyStore = InMemoryDocumentStore Map.empty
+emptyStore = InMemoryDocumentStore Map.empty Map.empty
 
 documentStorePort :: DocumentStore InMemoryDocumentStore
 documentStorePort =
   DocumentStore
     { lookupDocument = lookupDocumentInMemory
-    , saveDocument = saveDocumentInMemory
+    , saveDocument   = saveDocumentInMemory
+    , lookupHistory  = lookupHistoryInMemory
+    , saveHistory    = saveHistoryInMemory
     }
 
 lookupDocumentInMemory :: InMemoryDocumentStore -> DocumentId -> Maybe Document
-lookupDocumentInMemory (InMemoryDocumentStore documents) targetDocumentId =
-  Map.lookup targetDocumentId documents
+lookupDocumentInMemory store targetDocumentId =
+  Map.lookup targetDocumentId (internalDocuments store)
 
 saveDocumentInMemory :: InMemoryDocumentStore -> Document -> InMemoryDocumentStore
-saveDocumentInMemory (InMemoryDocumentStore documents) document =
-  InMemoryDocumentStore (Map.insert (documentId document) document documents)
+saveDocumentInMemory store document =
+  store { internalDocuments = Map.insert (documentId document) document (internalDocuments store) }
+
+lookupHistoryInMemory :: InMemoryDocumentStore -> DocumentId -> Maybe History
+lookupHistoryInMemory store targetDocumentId =
+  Map.lookup targetDocumentId (internalHistories store)
+
+saveHistoryInMemory :: InMemoryDocumentStore -> DocumentId -> History -> InMemoryDocumentStore
+saveHistoryInMemory store targetDocumentId history =
+  store { internalHistories = Map.insert targetDocumentId history (internalHistories store) }
 

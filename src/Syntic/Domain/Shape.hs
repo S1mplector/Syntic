@@ -8,6 +8,7 @@ module Syntic.Domain.Shape
 
 import Data.List.NonEmpty (NonEmpty)
 import Numeric.Natural (Natural)
+import Syntic.Domain.BrushStroke (BrushStroke, translateBrushStroke)
 import Syntic.Domain.Color (Color)
 import Syntic.Domain.Geometry
   ( Ellipse
@@ -31,6 +32,7 @@ data ShapeGeometry
   = RectangleGeometry !Rectangle
   | EllipseGeometry !Ellipse
   | PolylineGeometry !(NonEmpty Point)
+  | BrushStrokeGeometry !BrushStroke
   deriving stock (Eq, Show)
 
 data Style = Style
@@ -60,3 +62,5 @@ moveGeometry offset geometry =
       EllipseGeometry (translateEllipse offset ellipse)
     PolylineGeometry points ->
       PolylineGeometry (fmap (translatePoint offset) points)
+    BrushStrokeGeometry brushStroke ->
+      BrushStrokeGeometry (translateBrushStroke offset brushStroke)

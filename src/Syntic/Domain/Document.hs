@@ -2,6 +2,7 @@ module Syntic.Domain.Document
   ( Document
   , DocumentCommand (..)
   , DomainError (..)
+  , defaultLayerId
   , documentId
   , canvasSize
   , backgroundColor
@@ -9,36 +10,64 @@ module Syntic.Domain.Document
   , applyCommand
   , lookupShape
   , orderedShapes
+  , documentLayers
+  , lookupLayer
   ) where
 
+import Data.Bifunctor (first)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (mapMaybe)
 import Syntic.Domain.Color (Color)
 import Syntic.Domain.Geometry (CanvasSize, Vector)
-import Syntic.Domain.Identifier (DocumentId, ShapeId)
+import Syntic.Domain.Identifier (DocumentId, LayerId (..), ShapeId)
+import Syntic.Domain.Layer
+  ( BlendMode
+  , Layer
+  , LayerError (..)
+  , addShapeToLayer
+  , emptyLayer
+  , lookupShapeInLayer
+  , orderedLayerShapes
+  , removeShapeFromLayer
+  , renameLayer
+  , setLayerBlendMode
+  , setLayerOpacity
+  , setLayerVisibility
+  , updateShapeInLayer
+  )
 import Syntic.Domain.Shape (Shape (..), Style, moveShape)
 
 data Document = Document
-  { internalDocumentId :: !DocumentId
-  , internalCanvasSize :: !CanvasSize
+  { internalDocumentId      :: !DocumentId
+  , internalCanvasSize      :: !CanvasSize
   , internalBackgroundColor :: !Color
-  , internalShapes :: !(Map ShapeId Shape)
-  , internalStackingOrder :: ![ShapeId]
+  , internalLayers          :: !(Map LayerId Layer)
+  , internalLayerOrder      :: ![LayerId]
   }
   deriving stock (Eq, Show)
 
 data DocumentCommand
-  = AddShape !Shape
-  | MoveShape !ShapeId !Vector
-  | RestyleShape !ShapeId !Style
-  | RemoveShape !ShapeId
+  = AddLayer !LayerId !String
+  | RemoveLayer !LayerId
+  | SetLayerOpacity !LayerId !Double
+  | SetLayerBlendMode !LayerId !BlendMode
+  | SetLayerVisibility !LayerId !Bool
+  | RenameLayer !LayerId !String
+  | AddShape !LayerId !Shape
+  | MoveShape !LayerId !ShapeId !Vector
+  | RestyleShape !LayerId !ShapeId !Style
+  | RemoveShape !LayerId !ShapeId
   deriving stock (Eq, Show)
 
 data DomainError
-  = ShapeAlreadyExists !ShapeId
+  = LayerAlreadyExists !LayerId
+  | LayerNotFound !LayerId
+  | ShapeAlreadyExists !ShapeId
   | ShapeNotFound !ShapeId
   deriving stock (Eq, Show)
+
+defaultLayerId :: LayerId
+defaultLayerId = LayerId "default"
 
 documentId :: Document -> DocumentId
 documentId = internalDocumentId
@@ -49,72 +78,103 @@ canvasSize = internalCanvasSize
 backgroundColor :: Document -> Color
 backgroundColor = internalBackgroundColor
 
+documentLayers :: Document -> [Layer]
+documentLayers document =
+  foldr
+    (\lid acc -> maybe acc (: acc) (Map.lookup lid (internalLayers document)))
+    []
+    (internalLayerOrder document)
+
+lookupLayer :: LayerId -> Document -> Maybe Layer
+lookupLayer lid = Map.lookup lid . internalLayers
+
 emptyDocument :: DocumentId -> CanvasSize -> Color -> Document
 emptyDocument newDocumentId newCanvasSize newBackgroundColor =
   Document
-    { internalDocumentId = newDocumentId
-    , internalCanvasSize = newCanvasSize
+    { internalDocumentId      = newDocumentId
+    , internalCanvasSize      = newCanvasSize
     , internalBackgroundColor = newBackgroundColor
-    , internalShapes = Map.empty
-    , internalStackingOrder = []
+    , internalLayers          = Map.singleton defaultLayerId (emptyLayer defaultLayerId "Background")
+    , internalLayerOrder      = [defaultLayerId]
     }
 
 applyCommand :: DocumentCommand -> Document -> Either DomainError Document
 applyCommand command document =
   case command of
-    AddShape shape ->
-      addShape shape document
-    MoveShape targetShapeId offset ->
-      updateShape targetShapeId (moveShape offset) document
-    RestyleShape targetShapeId nextStyle ->
-      updateShape targetShapeId (\shape -> shape {shapeStyle = nextStyle}) document
-    RemoveShape targetShapeId ->
-      removeShape targetShapeId document
+    AddLayer lid name ->
+      addLayerToDocument lid name document
+    RemoveLayer lid ->
+      removeLayerFromDocument lid document
+    SetLayerOpacity lid value ->
+      modifyLayer lid (setLayerOpacity value) document
+    SetLayerBlendMode lid mode ->
+      modifyLayer lid (setLayerBlendMode mode) document
+    SetLayerVisibility lid vis ->
+      modifyLayer lid (setLayerVisibility vis) document
+    RenameLayer lid name ->
+      modifyLayer lid (renameLayer name) document
+    AddShape lid shape ->
+      withLayer lid document $ \layer ->
+        first liftLayerError (addShapeToLayer shape layer)
+    MoveShape lid sid offset ->
+      withLayer lid document $ \layer ->
+        first liftLayerError (updateShapeInLayer sid (moveShape offset) layer)
+    RestyleShape lid sid nextStyle ->
+      withLayer lid document $ \layer ->
+        first liftLayerError (updateShapeInLayer sid (\s -> s {shapeStyle = nextStyle}) layer)
+    RemoveShape lid sid ->
+      withLayer lid document $ \layer ->
+        first liftLayerError (removeShapeFromLayer sid layer)
 
-lookupShape :: ShapeId -> Document -> Maybe Shape
-lookupShape targetShapeId document =
-  Map.lookup targetShapeId (internalShapes document)
+lookupShape :: LayerId -> ShapeId -> Document -> Maybe Shape
+lookupShape lid sid document = do
+  layer <- Map.lookup lid (internalLayers document)
+  lookupShapeInLayer sid layer
 
 orderedShapes :: Document -> [Shape]
 orderedShapes document =
-  mapMaybe (`Map.lookup` internalShapes document) (internalStackingOrder document)
+  concatMap orderedLayerShapes (documentLayers document)
 
-addShape :: Shape -> Document -> Either DomainError Document
-addShape shape document
-  | Map.member newShapeId (internalShapes document) =
-      Left (ShapeAlreadyExists newShapeId)
+-- Internal helpers -------------------------------------------------------
+
+addLayerToDocument :: LayerId -> String -> Document -> Either DomainError Document
+addLayerToDocument lid name document
+  | Map.member lid (internalLayers document) =
+      Left (LayerAlreadyExists lid)
   | otherwise =
       Right
         document
-          { internalShapes = Map.insert newShapeId shape (internalShapes document)
-          , internalStackingOrder = internalStackingOrder document <> [newShapeId]
-          }
-  where
-    newShapeId = shapeId shape
-
-updateShape :: ShapeId -> (Shape -> Shape) -> Document -> Either DomainError Document
-updateShape targetShapeId transform document =
-  case Map.lookup targetShapeId (internalShapes document) of
-    Nothing ->
-      Left (ShapeNotFound targetShapeId)
-    Just currentShape ->
-      Right
-        document
-          { internalShapes =
-              Map.insert
-                targetShapeId
-                (transform currentShape)
-                (internalShapes document)
+          { internalLayers     = Map.insert lid (emptyLayer lid name) (internalLayers document)
+          , internalLayerOrder = internalLayerOrder document <> [lid]
           }
 
-removeShape :: ShapeId -> Document -> Either DomainError Document
-removeShape targetShapeId document
-  | Map.member targetShapeId (internalShapes document) =
+removeLayerFromDocument :: LayerId -> Document -> Either DomainError Document
+removeLayerFromDocument lid document
+  | Map.member lid (internalLayers document) =
       Right
         document
-          { internalShapes = Map.delete targetShapeId (internalShapes document)
-          , internalStackingOrder = filter (/= targetShapeId) (internalStackingOrder document)
+          { internalLayers     = Map.delete lid (internalLayers document)
+          , internalLayerOrder = filter (/= lid) (internalLayerOrder document)
           }
   | otherwise =
-      Left (ShapeNotFound targetShapeId)
+      Left (LayerNotFound lid)
+
+modifyLayer :: LayerId -> (Layer -> Layer) -> Document -> Either DomainError Document
+modifyLayer lid transform document =
+  case Map.lookup lid (internalLayers document) of
+    Nothing -> Left (LayerNotFound lid)
+    Just layer ->
+      Right document { internalLayers = Map.insert lid (transform layer) (internalLayers document) }
+
+withLayer :: LayerId -> Document -> (Layer -> Either DomainError Layer) -> Either DomainError Document
+withLayer lid document action =
+  case Map.lookup lid (internalLayers document) of
+    Nothing -> Left (LayerNotFound lid)
+    Just layer -> do
+      updatedLayer <- action layer
+      pure document { internalLayers = Map.insert lid updatedLayer (internalLayers document) }
+
+liftLayerError :: LayerError -> DomainError
+liftLayerError (LayerShapeAlreadyExists sid) = ShapeAlreadyExists sid
+liftLayerError (LayerShapeNotFound sid) = ShapeNotFound sid
 
