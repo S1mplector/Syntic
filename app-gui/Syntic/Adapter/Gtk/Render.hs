@@ -34,7 +34,7 @@ import Syntic.Domain.Document
   , documentLayers
   )
 import Syntic.Domain.Geometry
-  ( Point (pointX, pointY)
+  ( Point (Point, pointX, pointY)
   , Rectangle (rectangleHeight, rectangleOrigin, rectangleWidth)
   , Ellipse (ellipseCenter, ellipseRadiusX, ellipseRadiusY)
   , canvasHeight
@@ -56,7 +56,7 @@ import Syntic.Domain.Shape
     , PolylineGeometry
     , RectangleGeometry
     )
-  , Stroke (strokeColor, strokeWidth)
+  , Stroke (Stroke)
   , Style (fillColor, stroke)
   )
 
@@ -156,9 +156,9 @@ paintStyle style = do
       Cairo.fillPreserve
     Nothing -> pure ()
   case stroke style of
-    Just s -> do
-      setSolid (strokeColor s)
-      Cairo.setLineWidth (fromIntegral (strokeWidth s))
+    Just (Stroke sColor sWidth) -> do
+      setSolid sColor
+      Cairo.setLineWidth (fromIntegral sWidth)
       Cairo.stroke
     Nothing ->
       Cairo.newPath

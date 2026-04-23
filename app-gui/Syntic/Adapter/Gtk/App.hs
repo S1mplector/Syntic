@@ -2,7 +2,7 @@ module Syntic.Adapter.Gtk.App
   ( runGui
   ) where
 
-import Control.Monad (forM_, void, when)
+import Control.Monad (forM_, when)
 import Data.IORef
   ( IORef
   , atomicModifyIORef'
@@ -12,7 +12,6 @@ import Data.IORef
   , writeIORef
   )
 import qualified Data.List.NonEmpty as NE
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.GI.Base
@@ -45,7 +44,8 @@ import Syntic.Adapter.Gtk.State
   , presetBrush
   )
 import Syntic.Adapter.InMemory.DocumentStore
-  ( documentStorePort
+  ( InMemoryDocumentStore
+  , documentStorePort
   , emptyStore
   )
 import Syntic.Application.Editor
@@ -67,7 +67,7 @@ import Syntic.Application.Editor
   )
 import Syntic.Domain.BrushStroke
   ( BrushStroke (BrushStroke, strokeBrush, strokeColor, strokeSamples)
-  , StrokeSample (StrokeSample, samplePosition, samplePressure)
+  , StrokeSample (StrokeSample)
   )
 import Syntic.Domain.Color (opaque)
 import Syntic.Domain.Document
@@ -244,7 +244,7 @@ runGui = do
 
 buildMenuBar
   :: IORef AppState
-  -> EditorService store
+  -> EditorService InMemoryDocumentStore
   -> IO Gtk.MenuBar
 buildMenuBar _ _ = do
   menuBar <- new Gtk.MenuBar []
@@ -288,7 +288,7 @@ buildMenuBar _ _ = do
 
 buildToolbar
   :: IORef AppState
-  -> EditorService store
+  -> EditorService InMemoryDocumentStore
   -> IO (Gtk.Box, Gtk.RadioButton, Gtk.RadioButton, Gtk.RadioButton)
 buildToolbar stateRef editor = do
   bar <- new Gtk.Box
@@ -375,7 +375,7 @@ whenActive btn action = do
 
 buildSidePanel
   :: IORef AppState
-  -> EditorService store
+  -> EditorService InMemoryDocumentStore
   -> Gtk.DrawingArea
   -> IO (Gtk.Box, Gtk.ListBox, IO ())
 buildSidePanel stateRef editor canvas = do
@@ -515,7 +515,7 @@ handleMotion stateRef x y = do
 -- | Commit the current drag as a shape via the editor.
 handleRelease
   :: IORef AppState
-  -> EditorService store
+  -> EditorService InMemoryDocumentStore
   -> Int
   -> Int
   -> IO (Either ApplicationError String)
@@ -595,7 +595,7 @@ handleRelease stateRef editor x y = do
 
 applyAddShape
   :: IORef AppState
-  -> EditorService store
+  -> EditorService InMemoryDocumentStore
   -> AppState
   -> Shape
   -> String
